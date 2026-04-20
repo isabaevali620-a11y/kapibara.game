@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Капибара Учитель — игра для 2 класса</title>
+    <title>Капибара Учитель — Игры и наука для 2 класса</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -31,8 +31,9 @@
                 <div class="mode-buttons">
                     <button id="mathModeBtn" class="mode-btn math-btn" data-i18n="mathMode">📚 Математика</button>
                     <button id="dexterityModeBtn" class="mode-btn dexterity-btn" data-i18n="dexterityMode">🎯 Ловкость</button>
+                    <button id="quizModeBtn" class="mode-btn quiz-btn" data-i18n="quizMode">📖 Книга вопросов</button>
                 </div>
-                <div class="menu-instruction" data-i18n="menuInstruction">Выбери режим и начинай учиться с капибарой!</div>
+                <div class="menu-instruction" data-i18n="menuInstruction">Выбери режим и учись с капибарой!</div>
             </div>
         </section>
 
@@ -40,12 +41,7 @@
         <section id="mathSection" class="game-section math-section">
             <div class="question-area">
                 <div class="math-question" id="mathQuestion">7 + 5</div>
-                <div class="answer-buttons" id="answerButtons">
-                    <button class="answer-btn">12</button>
-                    <button class="answer-btn">10</button>
-                    <button class="answer-btn">14</button>
-                    <button class="answer-btn">8</button>
-                </div>
+                <div class="answer-buttons" id="answerButtons"></div>
                 <div class="feedback" id="feedback"></div>
             </div>
             <div class="math-controls">
@@ -56,11 +52,24 @@
         <!-- Режим Ловкость -->
         <section id="dexteritySection" class="game-section dexterity-section">
             <div class="dexterity-instruction" data-i18n="dexterityInstruction">Кликай на появляющиеся предметы!</div>
-            <div class="game-field" id="gameField">
-                <!-- Здесь будут появляться объекты для кликов -->
-            </div>
+            <div class="game-field" id="gameField"></div>
             <div class="dexterity-controls">
                 <button id="backToMenuFromDexterity" class="back-btn" data-i18n="backToMenu">🏠 В меню</button>
+            </div>
+        </section>
+
+        <!-- Режим Викторина (Книга вопросов) -->
+        <section id="quizSection" class="game-section quiz-section">
+            <div class="quiz-header">
+                <div class="quiz-book-icon">📘</div>
+                <div class="quiz-title" data-i18n="quizTitle">Естественные науки. Я и мир</div>
+            </div>
+            <div class="quiz-question" id="quizQuestion">Как называется наша планета?</div>
+            <div class="quiz-options" id="quizOptions"></div>
+            <div class="quiz-feedback" id="quizFeedback"></div>
+            <div class="quiz-progress" id="quizProgress">Вопрос 1 из 10</div>
+            <div class="quiz-controls">
+                <button id="backToMenuFromQuiz" class="back-btn" data-i18n="backToMenu">🏠 В меню</button>
             </div>
         </section>
     </div>
