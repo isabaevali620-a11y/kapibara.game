@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Капибара Учитель — игра для 2 класса</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Шапка с капибарой и счётом -->
+        <header class="game-header">
+            <div class="capybara-wrapper">
+                <div class="capybara" id="capybara">🦫</div>
+                <div class="capybara-message" id="capybaraMessage">Привет!</div>
+            </div>
+            <div class="score-area">
+                <span class="score-label" data-i18n="score">Очки:</span>
+                <span class="score-value" id="scoreValue">0</span>
+            </div>
+            <div class="language-selector">
+                <button class="lang-btn" data-lang="ru">🇷🇺 Рус</button>
+                <button class="lang-btn" data-lang="kg">🇰🇬 Кыр</button>
+            </div>
+        </header>
+
+        <!-- Главное меню -->
+        <section id="menuSection" class="game-section menu-section active">
+            <div class="menu-content">
+                <h1 class="game-title" data-i18n="title">🐹 Капибара Учитель</h1>
+                <div class="mode-buttons">
+                    <button id="mathModeBtn" class="mode-btn math-btn" data-i18n="mathMode">📚 Математика</button>
+                    <button id="dexterityModeBtn" class="mode-btn dexterity-btn" data-i18n="dexterityMode">🎯 Ловкость</button>
+                </div>
+                <div class="menu-instruction" data-i18n="menuInstruction">Выбери режим и начинай учиться с капибарой!</div>
+            </div>
+        </section>
+
+        <!-- Режим Математика -->
+        <section id="mathSection" class="game-section math-section">
+            <div class="question-area">
+                <div class="math-question" id="mathQuestion">7 + 5</div>
+                <div class="answer-buttons" id="answerButtons">
+                    <button class="answer-btn">12</button>
+                    <button class="answer-btn">10</button>
+                    <button class="answer-btn">14</button>
+                    <button class="answer-btn">8</button>
+                </div>
+                <div class="feedback" id="feedback"></div>
+            </div>
+            <div class="math-controls">
+                <button id="backToMenuFromMath" class="back-btn" data-i18n="backToMenu">🏠 В меню</button>
+            </div>
+        </section>
+
+        <!-- Режим Ловкость -->
+        <section id="dexteritySection" class="game-section dexterity-section">
+            <div class="dexterity-instruction" data-i18n="dexterityInstruction">Кликай на появляющиеся предметы!</div>
+            <div class="game-field" id="gameField">
+                <!-- Здесь будут появляться объекты для кликов -->
+            </div>
+            <div class="dexterity-controls">
+                <button id="backToMenuFromDexterity" class="back-btn" data-i18n="backToMenu">🏠 В меню</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
