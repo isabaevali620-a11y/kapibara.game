@@ -4,11 +4,11 @@ const translations = {
         title: "🐹 Капибара Учитель",
         mathMode: "📚 Математика",
         dexterityMode: "🎯 Ловкость",
-        menuInstruction: "Выбери режим и начинай учиться с капибарой!",
+        quizMode: "📖 Книга вопросов",
+        menuInstruction: "Выбери режим и учись с капибарой!",
         score: "Очки:",
         backToMenu: "🏠 В меню",
         dexterityInstruction: "Кликай на появляющиеся предметы!",
-        // сообщения капибары
         correct: "Молодец! 🎉",
         wrong_prefix: "Ошибка! Правильный ответ: ",
         great: "Отлично!",
@@ -16,12 +16,14 @@ const translations = {
         tryAgain: "Попробуй ещё!",
         catchMessage: "Хлоп! +1 очко",
         dexterityStart: "Лови предметы!",
-        gameOver: "Игра закончена"
+        quizTitle: "Естественные науки. Я и мир",
+        quizComplete: "Поздравляем! Ты прошёл викторину! 🎓"
     },
     kg: {
         title: "🐹 Капибара Мугалим",
         mathMode: "📚 Математика",
         dexterityMode: "🎯 Шамдылык",
+        quizMode: "📖 Суроо китеби",
         menuInstruction: "Режимди танда жана капибара менен үйрөн!",
         score: "Упай:",
         backToMenu: "🏠 Менюга",
@@ -33,88 +35,45 @@ const translations = {
         tryAgain: "Дагы аракет кыл!",
         catchMessage: "Бастың! +1 упай",
         dexterityStart: "Нерселерди карма!",
-        gameOver: "Оюн бүттү"
+        quizTitle: "Жаратылыш илимдери. Мен жана дүйнө",
+        quizComplete: "Куттуктайбыз! Сен викторинаны бүтүрдүң! 🎓"
     }
 };
 
-let currentLang = 'ru'; // ru или kg
+let currentLang = 'ru';
 
 // DOM элементы
 const menuSection = document.getElementById('menuSection');
 const mathSection = document.getElementById('mathSection');
 const dexteritySection = document.getElementById('dexteritySection');
+const quizSection = document.getElementById('quizSection');
 const capybara = document.getElementById('capybara');
 const capybaraMessage = document.getElementById('capybaraMessage');
 const scoreSpan = document.getElementById('scoreValue');
 
-// Режим математики
+// Общий счёт (для всех режимов)
 let currentScore = 0;
-let currentDifficulty = 10; // максимальное число для сложения/вычитания
+
+// ---------- Режим Математики ----------
+let mathActive = false;
+let currentDifficulty = 8;
 let currentQuestion = null;
 let currentCorrectAnswer = null;
-let mathActive = false;
 
-// Режим ловкости
-let dexterityActive = false;
-let dexterityScore = 0;
-let spawnIntervalId = null;
-let spawnDelay = 1000; // мс
-let minDelay = 350;
-let speedUpThreshold = 5; // ускоряемся каждые 5 очков
-let lastSpeedScore = 0;
-let activeObjects = [];
-
-// ---------- Вспомогательные функции ----------
-function updateUIText() {
-    // Обновляем все элементы с data-i18n
-    const elements = document.querySelectorAll('[data-i18n]');
-    elements.forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (translations[currentLang][key]) {
-            el.innerText = translations[currentLang][key];
-        }
-    });
-    // Дополнительно если в ловкости есть сообщение
-    const dexterityInst = document.querySelector('.dexterity-instruction');
-    if (dexterityInst && dexterityActive === false) {
-        dexterityInst.innerText = translations[currentLang].dexterityInstruction;
-    }
-}
-
-function showCapybaraMessage(text, isHappy = true) {
-    capybaraMessage.innerText = text;
-    capybara.classList.remove('happy', 'sad');
-    if (isHappy) {
-        capybara.classList.add('happy');
-    } else {
-        capybara.classList.add('sad');
-    }
-    setTimeout(() => {
-        if (capybara.classList.contains('happy') || capybara.classList.contains('sad')) {
-            capybara.classList.remove('happy', 'sad');
-        }
-    }, 500);
-}
-
-function updateScoreUI() {
-    scoreSpan.innerText = currentScore;
-}
-
-// ---------- МАТЕМАТИКА ----------
 function generateMathQuestion() {
-    const operation = Math.floor(Math.random() * 3); // 0:+ 1:- 2:*
+    const operation = Math.floor(Math.random() * 3);
     let a, b, answer, questionText;
-    if (operation === 0) { // сложение
+    if (operation === 0) {
         a = Math.floor(Math.random() * (currentDifficulty + 1));
         b = Math.floor(Math.random() * (currentDifficulty + 1));
         answer = a + b;
         questionText = `${a} + ${b}`;
-    } else if (operation === 1) { // вычитание (результат >=0)
+    } else if (operation === 1) {
         a = Math.floor(Math.random() * (currentDifficulty + 1));
         b = Math.floor(Math.random() * (a + 1));
         answer = a - b;
         questionText = `${a} - ${b}`;
-    } else { // умножение для 2 класса (таблица до 5, но с увеличением сложности можно до 6)
+    } else {
         let maxMul = Math.min(6, Math.floor(currentDifficulty / 2) + 2);
         if (maxMul < 2) maxMul = 2;
         a = Math.floor(Math.random() * (maxMul - 1)) + 2;
@@ -150,33 +109,28 @@ function renderMathQuestion() {
         const btn = document.createElement('button');
         btn.className = 'answer-btn';
         btn.innerText = opt;
-        btn.addEventListener('click', () => checkAnswer(opt));
+        btn.addEventListener('click', () => checkMathAnswer(opt));
         btnsContainer.appendChild(btn);
     });
 }
 
-function checkAnswer(selected) {
+function checkMathAnswer(selected) {
     if (!mathActive) return;
     const feedbackDiv = document.getElementById('feedback');
     if (selected === currentCorrectAnswer) {
-        // Правильно
         currentScore += 10;
         updateScoreUI();
-        // Похвала на языке
         let praise = translations[currentLang].correct;
         if (currentScore % 30 === 0) praise = translations[currentLang].excellent;
         else if (currentScore % 20 === 0) praise = translations[currentLang].great;
         showCapybaraMessage(praise, true);
         feedbackDiv.innerHTML = `✅ ${praise}`;
-        // Увеличиваем сложность
         if (currentDifficulty < 20) currentDifficulty += 1;
         renderMathQuestion();
     } else {
-        // Неправильно
         const wrongMsg = `${translations[currentLang].wrong_prefix}${currentCorrectAnswer}`;
         showCapybaraMessage(wrongMsg, false);
         feedbackDiv.innerHTML = `❌ ${wrongMsg}`;
-        // Не увеличиваем сложность, но вопрос меняем
         renderMathQuestion();
     }
 }
@@ -184,24 +138,32 @@ function checkAnswer(selected) {
 function startMathMode() {
     mathActive = true;
     dexterityActive = false;
+    quizActive = false;
     if (spawnIntervalId) clearInterval(spawnIntervalId);
     currentScore = 0;
-    currentDifficulty = 8; // начальный уровень
+    currentDifficulty = 8;
     updateScoreUI();
     renderMathQuestion();
     document.getElementById('feedback').innerHTML = '';
     showCapybaraMessage(translations[currentLang].great, true);
 }
 
-// ---------- ЛОВКОСТЬ (клик по объектам) ----------
+// ---------- Режим Ловкости ----------
+let dexterityActive = false;
+let spawnIntervalId = null;
+let spawnDelay = 1000;
+let minDelay = 350;
+let speedUpThreshold = 5;
+let lastSpeedScore = 0;
+let activeObjects = [];
+
 function createCatchObject() {
     if (!dexterityActive) return;
     const field = document.getElementById('gameField');
     const fieldRect = field.getBoundingClientRect();
     const obj = document.createElement('div');
     obj.className = 'catch-object';
-    // Симпатичные emoji для ловли
-    const items = ['🍎', '🍉', '⭐', '🍃', '🐟', '🥕', '🍒'];
+    const items = ['🍎', '🍉', '⭐', '🍃', '🐟', '🥕', '🍒', '🦋', '🌸'];
     obj.innerText = items[Math.floor(Math.random() * items.length)];
     const maxX = Math.max(40, fieldRect.width - 70);
     const maxY = Math.max(40, fieldRect.height - 70);
@@ -217,33 +179,27 @@ function createCatchObject() {
     });
     field.appendChild(obj);
     activeObjects.push(obj);
-    // самоуничтожение через 1.3 секунды
     setTimeout(() => {
         if (obj && obj.parentNode) {
             obj.remove();
             const idx = activeObjects.indexOf(obj);
             if (idx !== -1) activeObjects.splice(idx, 1);
         }
-    }, 1300);
+    }, 1400);
 }
 
 function catchObjectHandler(obj) {
     if (!dexterityActive) return;
-    dexterityScore++;
-    currentScore = dexterityScore;
+    currentScore++;
     updateScoreUI();
-    // Анимация капибары радость
     showCapybaraMessage(translations[currentLang].catchMessage, true);
-    // Удаляем объект
     if (obj && obj.parentNode) obj.remove();
     const idx = activeObjects.indexOf(obj);
     if (idx !== -1) activeObjects.splice(idx, 1);
     
-    // Ускорение игры (каждые speedUpThreshold очков)
-    if (dexterityScore >= lastSpeedScore + speedUpThreshold && spawnDelay > minDelay) {
-        lastSpeedScore = dexterityScore;
-        spawnDelay = Math.max(minDelay, spawnDelay - 50);
-        // перезапуск интервала
+    if (currentScore >= lastSpeedScore + speedUpThreshold && spawnDelay > minDelay) {
+        lastSpeedScore = currentScore;
+        spawnDelay = Math.max(minDelay, spawnDelay - 45);
         if (spawnIntervalId) {
             clearInterval(spawnIntervalId);
             spawnIntervalId = setInterval(() => {
@@ -254,48 +210,254 @@ function catchObjectHandler(obj) {
 }
 
 function startDexterityMode() {
-    // Очистка предыдущего режима математики
     mathActive = false;
     dexterityActive = true;
+    quizActive = false;
     if (spawnIntervalId) clearInterval(spawnIntervalId);
-    // Очистка поля
     const field = document.getElementById('gameField');
     field.innerHTML = '';
     activeObjects.forEach(obj => { if(obj && obj.remove) obj.remove(); });
     activeObjects = [];
-    dexterityScore = 0;
     currentScore = 0;
     spawnDelay = 1000;
     lastSpeedScore = 0;
     updateScoreUI();
-    // Запускаем спавн
     spawnIntervalId = setInterval(() => {
         if (dexterityActive) createCatchObject();
     }, spawnDelay);
-    // Первые 3 объекта быстро
     setTimeout(() => { if(dexterityActive) for(let i=0;i<2;i++) createCatchObject(); }, 100);
     showCapybaraMessage(translations[currentLang].dexterityStart, true);
     const inst = document.querySelector('.dexterity-instruction');
     if (inst) inst.innerText = translations[currentLang].dexterityInstruction;
 }
 
-// ---------- ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ И ЯЗЫКА ----------
-function showMenu() {
-    // Останавливаем активные режимы
+// ---------- Режим Викторины (Книга вопросов) ----------
+let quizActive = false;
+let quizQuestions = [];
+let currentQuizIndex = 0;
+let quizScore = 0;
+let waitingForNext = false;
+
+// Вопросы по естественным наукам (Я и мир, 2 класс)
+const baseQuestions = [
+    {
+        text_ru: "Как называется наша планета?",
+        text_kg: "Биздин планета кандай аталат?",
+        options_ru: ["Земля", "Марс", "Юпитер", "Венера"],
+        options_kg: ["Жер", "Марс", "Юпитер", "Чолпон"],
+        correct: 0
+    },
+    {
+        text_ru: "Какое животное даёт молоко?",
+        text_kg: "Кайсы жаныбар сүт берет?",
+        options_ru: ["Курица", "Корова", "Собака", "Лошадь"],
+        options_kg: ["Тоок", "Уй", "Ит", "Жылкы"],
+        correct: 1
+    },
+    {
+        text_ru: "Что из этого растёт на дереве?",
+        text_kg: "Мунун кайсынысы даракта өсөт?",
+        options_ru: ["Картошка", "Морковь", "Яблоко", "Огурец"],
+        options_kg: ["Картошка", "Сабиз", "Алма", "Бадыраң"],
+        correct: 2
+    },
+    {
+        text_ru: "Сколько дней в неделе?",
+        text_kg: "Аптада канча күн бар?",
+        options_ru: ["5", "6", "7", "8"],
+        options_kg: ["5", "6", "7", "8"],
+        correct: 2
+    },
+    {
+        text_ru: "Как называется время года, когда тает снег?",
+        text_kg: "Кар эриген жыл мезгили кандай аталат?",
+        options_ru: ["Зима", "Весна", "Лето", "Осень"],
+        options_kg: ["Кыш", "Жаз", "Жай", "Күз"],
+        correct: 1
+    },
+    {
+        text_ru: "Кто из этих животных плавает в воде?",
+        text_kg: "Бул жаныбарлардын кайсынысы сууда сүзөт?",
+        options_ru: ["Кошка", "Рыба", "Птица", "Заяц"],
+        options_kg: ["Мышык", "Балык", "Куш", "Коён"],
+        correct: 1
+    },
+    {
+        text_ru: "Какой орган помогает нам думать?",
+        text_kg: "Бизге ойлоого кайсы орган жардам берет?",
+        options_ru: ["Сердце", "Мозг", "Желудок", "Лёгкие"],
+        options_kg: ["Жүрөк", "Мээ", "Ашказан", "Өпкө"],
+        correct: 1
+    },
+    {
+        text_ru: "Что нужно растениям для роста?",
+        text_kg: "Өсүмдүктөргө өсүү үчүн эмне керек?",
+        options_ru: ["Свет и вода", "Только темнота", "Только песок", "Лёд"],
+        options_kg: ["Жарык жана суу", "Караңгылык", "Кум гана", "Муз"],
+        correct: 0
+    },
+    {
+        text_ru: "Какой праздник отмечают весной?",
+        text_kg: "Кайсы майрам жазда белгиленет?",
+        options_ru: ["Новый год", "8 Марта", "Хэллоуин", "День рождения"],
+        options_kg: ["Жаңы жыл", "8-Март", "Хэллоуин", "Туулган күн"],
+        correct: 1
+    },
+    {
+        text_ru: "Кто из них — домашнее животное?",
+        text_kg: "Алардын кайсынысы үй жаныбары?",
+        options_ru: ["Волк", "Лиса", "Корова", "Медведь"],
+        options_kg: ["Карышкыр", "Түлкү", "Уй", "Аюу"],
+        correct: 2
+    }
+];
+
+function buildQuizQuestions() {
+    return baseQuestions.map(q => ({
+        text: currentLang === 'ru' ? q.text_ru : q.text_kg,
+        options: currentLang === 'ru' ? [...q.options_ru] : [...q.options_kg],
+        correct: q.correct
+    }));
+}
+
+function loadQuizQuestion() {
+    if (!quizActive) return;
+    if (currentQuizIndex >= quizQuestions.length) {
+        finishQuiz();
+        return;
+    }
+    const q = quizQuestions[currentQuizIndex];
+    document.getElementById('quizQuestion').innerText = q.text;
+    const container = document.getElementById('quizOptions');
+    container.innerHTML = '';
+    q.options.forEach((opt, idx) => {
+        const btn = document.createElement('div');
+        btn.className = 'quiz-option';
+        btn.innerText = opt;
+        btn.dataset.optIndex = idx;
+        btn.addEventListener('click', () => checkQuizAnswer(idx));
+        container.appendChild(btn);
+    });
+    document.getElementById('quizFeedback').innerHTML = '';
+    document.getElementById('quizProgress').innerText = `${translations[currentLang].quizProgress || 'Вопрос'} ${currentQuizIndex+1} ${translations[currentLang].of || 'из'} ${quizQuestions.length}`;
+    waitingForNext = false;
+}
+
+function checkQuizAnswer(selectedIdx) {
+    if (waitingForNext || !quizActive) return;
+    const q = quizQuestions[currentQuizIndex];
+    const isCorrect = (selectedIdx === q.correct);
+    const optionsDivs = document.querySelectorAll('.quiz-option');
+    optionsDivs.forEach(div => div.style.pointerEvents = 'none');
+    if (isCorrect) {
+        currentScore += 10;
+        updateScoreUI();
+        quizScore++;
+        showCapybaraMessage(translations[currentLang].correct, true);
+        document.getElementById('quizFeedback').innerHTML = `✅ ${translations[currentLang].correct}`;
+        optionsDivs[selectedIdx].classList.add('correct-feedback');
+    } else {
+        showCapybaraMessage(translations[currentLang].wrong_prefix + q.options[q.correct], false);
+        document.getElementById('quizFeedback').innerHTML = `❌ ${translations[currentLang].wrong_prefix} ${q.options[q.correct]}`;
+        optionsDivs[selectedIdx].classList.add('wrong-feedback');
+        optionsDivs[q.correct].classList.add('correct-feedback');
+    }
+    waitingForNext = true;
+    setTimeout(() => {
+        currentQuizIndex++;
+        if (currentQuizIndex < quizQuestions.length) {
+            loadQuizQuestion();
+        } else {
+            finishQuiz();
+        }
+    }, 2000);
+}
+
+function finishQuiz() {
+    if (!quizActive) return;
+    quizActive = false;
+    const total = quizQuestions.length;
+    const message = `${translations[currentLang].quizComplete} ${translations[currentLang].score} ${currentScore}`;
+    showCapybaraMessage(message, true);
+    document.getElementById('quizFeedback').innerHTML = `🎉 ${message} 🎉`;
+    document.getElementById('quizProgress').innerText = `${translations[currentLang].quizComplete}`;
+    const optionsDivs = document.querySelectorAll('.quiz-option');
+    optionsDivs.forEach(div => div.style.pointerEvents = 'none');
+}
+
+function startQuizMode() {
     mathActive = false;
     dexterityActive = false;
+    quizActive = true;
+    if (spawnIntervalId) clearInterval(spawnIntervalId);
+    // Обновить вопросы согласно текущему языку
+    quizQuestions = buildQuizQuestions();
+    currentQuizIndex = 0;
+    quizScore = 0;
+    currentScore = 0; // можно начать с нуля или оставить старый счёт — для честности обнулим
+    updateScoreUI();
+    waitingForNext = false;
+    loadQuizQuestion();
+    showCapybaraMessage(translations[currentLang].great, true);
+}
+
+// ---------- Общие функции ----------
+function updateUIForLanguage() {
+    const elements = document.querySelectorAll('[data-i18n]');
+    elements.forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[currentLang][key]) {
+            el.innerText = translations[currentLang][key];
+        }
+    });
+    // Если активен режим викторины, перезагрузить вопросы
+    if (quizActive && quizSection.classList.contains('active')) {
+        quizQuestions = buildQuizQuestions();
+        currentQuizIndex = 0;
+        loadQuizQuestion();
+    }
+    // Если активен любой другой режим, обновить сообщение капибары
+    if (menuSection.classList.contains('active')) {
+        capybaraMessage.innerText = translations[currentLang].menuInstruction;
+    } else if (mathSection.classList.contains('active')) {
+        capybaraMessage.innerText = translations[currentLang].great;
+    } else if (dexteritySection.classList.contains('active')) {
+        capybaraMessage.innerText = translations[currentLang].dexterityStart;
+    }
+}
+
+function showCapybaraMessage(text, isHappy = true) {
+    capybaraMessage.innerText = text;
+    capybara.classList.remove('happy', 'sad');
+    if (isHappy) {
+        capybara.classList.add('happy');
+    } else {
+        capybara.classList.add('sad');
+    }
+    setTimeout(() => {
+        capybara.classList.remove('happy', 'sad');
+    }, 500);
+}
+
+function updateScoreUI() {
+    scoreSpan.innerText = currentScore;
+}
+
+function showMenu() {
+    mathActive = false;
+    dexterityActive = false;
+    quizActive = false;
     if (spawnIntervalId) {
         clearInterval(spawnIntervalId);
         spawnIntervalId = null;
     }
-    // Очистка поля ловкости
     const field = document.getElementById('gameField');
     if (field) field.innerHTML = '';
     activeObjects = [];
-    // Показываем меню
     menuSection.classList.add('active');
     mathSection.classList.remove('active');
     dexteritySection.classList.remove('active');
+    quizSection.classList.remove('active');
     currentScore = 0;
     updateScoreUI();
     capybaraMessage.innerText = translations[currentLang].menuInstruction;
@@ -303,23 +465,11 @@ function showMenu() {
 
 function setLanguage(lang) {
     currentLang = lang;
-    updateUIText();
-    // Обновить сообщение капибары в зависимости от активного режима
-    if (menuSection.classList.contains('active')) {
-        capybaraMessage.innerText = translations[currentLang].menuInstruction;
-    } else if (mathSection.classList.contains('active')) {
-        capybaraMessage.innerText = translations[currentLang].great;
-        document.getElementById('feedback').innerHTML = '';
-    } else if (dexteritySection.classList.contains('active')) {
-        capybaraMessage.innerText = translations[currentLang].dexterityStart;
-        const inst = document.querySelector('.dexterity-instruction');
-        if (inst) inst.innerText = translations[currentLang].dexterityInstruction;
-    }
+    updateUIForLanguage();
 }
 
-// ---------- ИНИЦИАЛИЗАЦИЯ И СОБЫТИЯ ----------
+// ---------- Инициализация ----------
 document.addEventListener('DOMContentLoaded', () => {
-    // Кнопки выбора языка
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const lang = btn.getAttribute('data-lang');
@@ -327,25 +477,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Кнопки режимов в меню
     document.getElementById('mathModeBtn').addEventListener('click', () => {
         menuSection.classList.remove('active');
         mathSection.classList.add('active');
         startMathMode();
-        updateUIText(); // обновить надписи кнопок
+        updateUIForLanguage();
     });
     document.getElementById('dexterityModeBtn').addEventListener('click', () => {
         menuSection.classList.remove('active');
         dexteritySection.classList.add('active');
         startDexterityMode();
-        updateUIText();
+        updateUIForLanguage();
+    });
+    document.getElementById('quizModeBtn').addEventListener('click', () => {
+        menuSection.classList.remove('active');
+        quizSection.classList.add('active');
+        startQuizMode();
+        updateUIForLanguage();
     });
     
-    // Кнопки "В меню"
     document.getElementById('backToMenuFromMath').addEventListener('click', showMenu);
     document.getElementById('backToMenuFromDexterity').addEventListener('click', showMenu);
+    document.getElementById('backToMenuFromQuiz').addEventListener('click', showMenu);
     
-    // Начальная установка языка и UI
     setLanguage('ru');
     showMenu();
 });
+
+// Добавим недостающий перевод для quizProgress
+translations.ru.quizProgress = 'Вопрос';
+translations.ru.of = 'из';
+translations.kg.quizProgress = 'Суроо';
+translations.kg.of = 'ичинен';
